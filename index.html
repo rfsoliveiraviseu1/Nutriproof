@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#163d35">
+<title>NutriProof — Comprendre les preuves</title>
+<style>
+:root{--ink:#17342e;--muted:#62736e;--bg:#f5f7f3;--card:#fff;--line:#dce5de;--accent:#276653;--soft:#e8f2ec;--amber:#fff4d9}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:#163d35;color:white;padding:22px 18px 26px} .top{max-width:960px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.brand{font-weight:800;font-size:1.35rem;letter-spacing:-.04em}.brand span{color:#a7d7b8}
+select,button,input{font:inherit}select{border:1px solid #b8cec2;border-radius:10px;padding:8px;background:white;color:var(--ink)}
+.hero{max-width:960px;margin:24px auto 0;padding:0 18px}.eyebrow{text-transform:uppercase;letter-spacing:.12em;font-size:.72rem;color:#bce2c9;font-weight:700}
+h1{font-size:clamp(2rem,5vw,3.25rem);line-height:1.05;letter-spacing:-.045em;max-width:700px;margin:10px 0 14px}.hero p{max-width:660px;color:#d6e7df;margin:0}
+main{max-width:960px;margin:26px auto;padding:0 18px 50px}.searchbox{display:flex;gap:10px;margin-top:-2px}.searchbox input{flex:1;min-width:0;border:1px solid var(--line);border-radius:12px;padding:14px 15px;background:white}.searchbox button,.primary{border:0;background:var(--accent);color:white;border-radius:12px;padding:12px 17px;font-weight:700;cursor:pointer}.filters{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 22px}.chip{border:1px solid var(--line);background:white;color:var(--ink);border-radius:999px;padding:7px 12px;cursor:pointer}.chip.active{background:var(--soft);border-color:#9bbfac;font-weight:700}
+.layout{display:grid;grid-template-columns:1fr 1.35fr;gap:18px}.panel,.detail{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px}.panel h2,.detail h2{margin:0 0 12px;font-size:1.1rem}.result{width:100%;text-align:left;background:white;border:1px solid var(--line);border-radius:12px;padding:13px;margin:7px 0;cursor:pointer;color:var(--ink)}.result:hover,.result.selected{border-color:var(--accent);background:#f3faf5}.result strong{display:block}.result small{color:var(--muted)}.pill{display:inline-block;font-size:.75rem;border-radius:999px;background:var(--soft);padding:4px 8px;color:#245a46;font-weight:700}.pill.caution{background:var(--amber);color:#765512}.muted{color:var(--muted)}.section{border-top:1px solid var(--line);padding:14px 0}.section h3{font-size:.95rem;margin:0 0 5px}.sources a{display:block;overflow-wrap:anywhere;color:var(--accent);margin:5px 0}.notice{background:#fff7e4;border:1px solid #f0dfb1;border-radius:12px;padding:12px 14px;font-size:.87rem;margin-top:16px}.method{font-size:.88rem;background:#edf3ef;border-radius:12px;padding:12px;margin-top:14px}.footer{font-size:.8rem;color:var(--muted);margin-top:24px}.empty{padding:18px;color:var(--muted)}@media(max-width:700px){.layout{grid-template-columns:1fr}.searchbox{flex-direction:column}.searchbox button{width:100%}.top{align-items:flex-start}}
+</style>
+</head>
+<body>
+<header>
+  <div class="top"><div class="brand">Nutri<span>Proof</span></div><label><span id="langLabel" style="font-size:.8rem;margin-right:6px">Langue</span><select id="language" aria-label="Language"><option value="fr">Français</option><option value="en">English</option></select></label></div>
+  <div class="hero"><div class="eyebrow" id="eyebrow">Des preuves, pas des promesses</div><h1 id="headline">Comprenez ce que la science dit vraiment des suppléments.</h1><p id="intro">Des fiches transparentes, des limites clairement expliquées et des sources consultables. Pas de classement sponsorisé.</p></div>
+</header>
+<main>
+  <div class="searchbox"><input id="search" type="search" placeholder="Rechercher un ingrédient (ex. créatine, magnésium)…" aria-label="Search ingredients"><button id="searchBtn">Rechercher</button></div>
+  <div class="filters" id="filters"></div>
+  <div class="layout">
+    <section class="panel"><h2 id="resultsTitle">Ingrédients</h2><div id="results"></div></section>
+    <article class="detail" id="detail" aria-live="polite"></article>
+  </div>
+  <div class="notice" id="safety"></div>
+  <div class="method" id="method"></div>
+  <div class="footer" id="footer"></div>
+</main>
+<script>
+const db = [
+ {id:"creatine", names:{fr:"Créatine monohydrate",en:"Creatine monohydrate"}, aliases:["creatine","créatine","monohydrate"], category:"performance",
+  status:"example", certainty:"moderate", claim:{fr:"Les données chez l'humain soutiennent un bénéfice pour certains efforts intenses répétés et en association avec un entraînement de résistance.",en:"Human evidence supports benefits for some repeated high-intensity efforts and when combined with resistance training."},
+  limits:{fr:"L'ampleur du bénéfice varie selon l'activité, le protocole et la personne. Cette fiche de démonstration n'est pas encore une revue systématique complète.",en:"The size of the benefit varies by activity, protocol and individual. This demonstration card is not yet a complete systematic review."},
+  safety:{fr:"Des précautions peuvent être nécessaires selon l'état de santé et les médicaments. En cas de maladie rénale, de grossesse ou de situation médicale particulière, demandez conseil à un professionnel de santé.",en:"Precautions may be needed depending on health status and medicines. If you have kidney disease, are pregnant, or have a relevant medical condition, consult a healthcare professional."},
+  sources:[{label:"NIH Office of Dietary Supplements — Dietary Supplements for Exercise and Athletic Performance",url:"https://ods.od.nih.gov/factsheets/ExerciseAndAthleticPerformance-HealthProfessional/"}]},
+ {id:"magnesium", names:{fr:"Magnésium",en:"Magnesium"}, aliases:["magnesium","magnésium"], category:"nutrients",
+  status:"example", certainty:"not_assessed", claim:{fr:"Le magnésium est un nutriment essentiel. Le bénéfice d'un supplément dépend notamment des apports alimentaires, du statut nutritionnel et de la situation étudiée.",en:"Magnesium is an essential nutrient. The benefit of supplementation depends on dietary intake, nutritional status and the situation being studied."},
+  limits:{fr:"Les effets d'une supplémentation chez une personne dont les apports sont suffisants ne doivent pas être déduits des fonctions normales du nutriment.",en:"Benefits in someone with adequate intake should not be inferred solely from the nutrient's normal functions."},
+  safety:{fr:"Des doses élevées provenant de suppléments peuvent provoquer des effets digestifs et poser problème dans certaines situations médicales. Vérifiez la dose élémentaire et demandez conseil en cas de doute.",en:"High supplemental doses can cause digestive effects and may be problematic in some medical situations. Check the elemental dose and seek advice if unsure."},
+  sources:[{label:"NIH Office of Dietary Supplements — Magnesium: Fact Sheet for Health Professionals",url:"https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/"}]},
+ {id:"ashwagandha", names:{fr:"Ashwagandha",en:"Ashwagandha"}, aliases:["ashwagandha","withania"], category:"herbs",
+  status:"example", certainty:"low", claim:{fr:"Certaines petites études suggèrent des effets possibles sur le stress ou le sommeil, mais les préparations, doses et durées varient.",en:"Some small studies suggest possible effects on stress or sleep, but preparations, doses and durations vary."},
+  limits:{fr:"Les résultats ne s'appliquent pas automatiquement à toutes les préparations commerciales. La qualité et la durée des données sont limitées.",en:"Results do not automatically apply to all commercial preparations. Evidence quality and duration are limited."},
+  safety:{fr:"Des effets indésirables et des interactions sont possibles; des cas rares d'atteinte hépatique ont été signalés. Évitez l'automédication en cas de grossesse ou de maladie sous-jacente et demandez conseil à un professionnel.",en:"Adverse effects and interactions are possible; rare cases of liver injury have been reported. Avoid self-medication during pregnancy or with underlying conditions and consult a healthcare professional."},
+  sources:[{label:"NCCIH — Ashwagandha: Usefulness and Safety",url:"https://www.nccih.nih.gov/health/ashwagandha"}]}
+];
+let activeCategory="all", selectedId="creatine";
+const copy={
+ fr:{lang:"Langue",eyebrow:"Des preuves, pas des promesses",headline:"Comprenez ce que la science dit vraiment des suppléments.",intro:"Des fiches transparentes, des limites clairement expliquées et des sources consultables. Pas de classement sponsorisé.",placeholder:"Rechercher un ingrédient (ex. créatine, magnésium)…",search:"Rechercher",results:"Ingrédients",all:"Tous",performance:"Performance",nutrients:"Nutriments",herbs:"Plantes",claim:"Ce que les données suggèrent",limits:"Limites des preuves",safety:"Sécurité et précautions",sources:"Sources de référence",moderate:"Certitude non évaluée formellement — synthèse indicative",low:"Certitude faible (préliminaire)",not_assessed:"Non évaluée",empty:"Aucun résultat. Essayez un autre terme.",notice:"Information générale uniquement — ne constitue ni un diagnostic ni une recommandation personnalisée. Les fiches de cette première maquette sont des exemples préliminaires et ne doivent pas être utilisées pour prendre une décision médicale. Vérifiez les sources et demandez conseil à un médecin ou à un pharmacien en cas de traitement, de maladie, de grossesse ou de doute.",method:"Méthode : chaque affirmation doit être reliée à des sources consultables, avec population, résultat, limites et date de révision. Les niveaux de certitude ne seront publiés qu'après évaluation documentée et relecture.",footer:"Prototype de démonstration • Pas de compte, pas de suivi médical, pas de publicité ni de liens affiliés dans cette version.",review:"Statut : fiche de démonstration à réviser",category:"Catégorie"},
+ en:{lang:"Language",eyebrow:"Evidence, not promises",headline:"Understand what science really says about supplements.",intro:"Transparent summaries, clear limitations and sources you can check. No sponsored rankings.",placeholder:"Search an ingredient (e.g. creatine, magnesium)…",search:"Search",results:"Ingredients",all:"All",performance:"Performance",nutrients:"Nutrients",herbs:"Herbs",claim:"What the evidence suggests",limits:"Evidence limitations",safety:"Safety and precautions",sources:"Reference sources",moderate:"Certainty not formally assessed — indicative summary",low:"Low certainty (preliminary)",not_assessed:"Not assessed",empty:"No results. Try another term.",notice:"General information only — not a diagnosis or personalized recommendation. Cards in this first mock-up are preliminary examples and should not be used to make medical decisions. Check the sources and consult a doctor or pharmacist if you take medicines, have a condition, are pregnant, or are unsure.",method:"Method: each claim should link to checkable sources and document population, outcome, limitations and review date. Certainty ratings will only be published after documented assessment and review.",footer:"Demonstration prototype • No accounts, medical tracking, ads or affiliate links in this version.",review:"Status: demonstration card requiring review",category:"Category"}
+};
+function t(k){return copy[document.getElementById("language").value][k]}
+function catName(c){return t(c)}
+function setLanguage(){let l=document.getElementById("language").value;document.documentElement.lang=l;["langLabel","eyebrow","headline","intro","searchBtn","resultsTitle","safety","method","footer"].forEach(id=>{let key={langLabel:"lang",searchBtn:"search",resultsTitle:"results"}[id]||id; if(copy[l][key])document.getElementById(id).textContent=copy[l][key]});document.getElementById("search").placeholder=copy[l].placeholder;renderFilters();renderResults();renderDetail()}
+function renderFilters(){let box=document.getElementById("filters");let cats=["all","performance","nutrients","herbs"];box.innerHTML="";cats.forEach(c=>{let b=document.createElement("button");b.className="chip"+(activeCategory===c?" active":"");b.textContent=t(c);b.onclick=()=>{activeCategory=c;renderFilters();renderResults()};box.appendChild(b)})}
+function visible(){let q=document.getElementById("search").value.trim().toLowerCase();return db.filter(x=>(activeCategory==="all"||x.category===activeCategory)&&(!q||[x.names.fr,x.names.en,...x.aliases].join(" ").toLowerCase().includes(q)))}
+function renderResults(){let box=document.getElementById("results");box.innerHTML="";let rows=visible();if(!rows.length){box.innerHTML='<div class="empty">'+t("empty")+'</div>';return}rows.forEach(x=>{let b=document.createElement("button");b.className="result"+(x.id===selectedId?" selected":"");let title=document.createElement("strong");title.textContent=x.names[document.getElementById("language").value];let small=document.createElement("small");small.textContent=catName(x.category);b.append(title,small);b.onclick=()=>{selectedId=x.id;renderResults();renderDetail()};box.appendChild(b)})}
+function renderDetail(){let x=db.find(x=>x.id===selectedId)||db[0],l=document.getElementById("language").value;let certainty=x.certainty==="moderate"?t("moderate"):x.certainty==="low"?t("low"):t("not_assessed");let d=document.getElementById("detail");d.innerHTML="";let title=document.createElement("h2");title.textContent=x.names[l];let pill=document.createElement("span");pill.className="pill caution";pill.textContent=t("review");d.append(title,pill);
+function section(h,txt){let s=document.createElement("div");s.className="section";let hh=document.createElement("h3");hh.textContent=h;let p=document.createElement("p");p.textContent=txt;s.append(hh,p);d.appendChild(s)}
+let c=document.createElement("div");c.className="section";let ch=document.createElement("h3");ch.textContent=t("claim");let cp=document.createElement("p");cp.textContent=x.claim[l];let badge=document.createElement("div");badge.className="pill";badge.textContent=certainty;c.append(ch,cp,badge);d.appendChild(c);
+section(t("limits"),x.limits[l]);section(t("safety"),x.safety[l]);
+let s=document.createElement("div");s.className="section sources";let h=document.createElement("h3");h.textContent=t("sources");s.appendChild(h);x.sources.forEach(src=>{let a=document.createElement("a");a.href=src.url;a.target="_blank";a.rel="noopener noreferrer";a.textContent=src.label;a.setAttribute("aria-label",src.label+" (opens in new tab)");s.appendChild(a)});d.appendChild(s);
+}
+document.getElementById("language").addEventListener("change",setLanguage);
+document.getElementById("search").addEventListener("input",renderResults);
+document.getElementById("searchBtn").addEventListener("click",renderResults);
+setLanguage();
+</script>
+</body>
+</html>
