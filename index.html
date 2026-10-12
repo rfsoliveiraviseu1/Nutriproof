@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="description" content="NutriProof: evidence-aware supplement guide in French, English and Portuguese, with goals, safety notes, timing, references and saved favourites.">
-<title>NutriProof Premium — Evidence-first supplement guide | v6.3</title>
+<title>NutriProof Premium — Evidence-first supplement guide | v6.5</title>
 <style>
 :root{--ink:#17342e;--muted:#62736e;--bg:#f5f7f3;--card:#fff;--line:#dce5de;--accent:#276653;--soft:#e8f2ec;--amber:#fff4d9}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -108,7 +108,7 @@ ashwagandha:{claim:"Alguns estudos pequenos sugerem possíveis melhorias no stre
 };
 db.forEach(x=>{if(ptTranslations[x.id]){x.claim.pt=ptTranslations[x.id].claim;x.limits.pt=ptTranslations[x.id].limits;x.safety.pt=ptTranslations[x.id].safety;}});
 
-let activeCategory="all", activeGoal="all", selectedId="creatine", favoritesOnly=false;
+let activeCategory="all", activeGoal="all", selectedId="", favoritesOnly=false;
 const favorites = new Set();
 try { JSON.parse(localStorage.getItem("nutriproof-favorites")||"[]").forEach(id=>favorites.add(id)); } catch(e) {}
 function saveFavorites(){try{localStorage.setItem("nutriproof-favorites",JSON.stringify([...favorites]));}catch(e){}}
@@ -160,30 +160,39 @@ function visible(){
  }).map(o=>o.x);
 }
 function renderTools(){const box=document.getElementById("tools");box.innerHTML="";const fav=document.createElement("button");fav.className="action";fav.textContent=(favoritesOnly?"★ ":"☆ ")+t("favorites");fav.setAttribute("aria-pressed",String(favoritesOnly));fav.onclick=()=>{favoritesOnly=!favoritesOnly;renderTools();renderResults()};box.appendChild(fav);const exp=document.createElement("button");exp.className="action";exp.textContent=t("exportList");exp.onclick=()=>{const data=db.filter(x=>favorites.has(x.id)).map(x=>({id:x.id,name:x.names[document.getElementById("language").value]}));const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="nutriproof-favoris.json";a.click();URL.revokeObjectURL(url)};box.appendChild(exp)}
-function renderResults(){let box=document.getElementById("results");box.innerHTML="";let rows=visible();const count=document.createElement("p");count.className="count";count.textContent=rows.length+" "+t("countLabel");box.appendChild(count);if(!rows.length){box.innerHTML='<div class="empty">'+t("empty")+'</div>';return}rows.forEach(x=>{let b=document.createElement("button");b.className="result"+(x.id===selectedId?" selected":"");let title=document.createElement("strong");title.textContent=x.names[document.getElementById("language").value];if(favorites.has(x.id)){let star=document.createElement("span");star.className="favmark";star.textContent="★";title.appendChild(star)}let small=document.createElement("small");small.textContent=catName(x.category);b.append(title,small);b.onclick=()=>{selectedId=x.id;renderResults();renderDetail()};box.appendChild(b)})}
-function renderDetail(){let x=db.find(x=>x.id===selectedId)||db[0],l=document.getElementById("language").value;let certainty=x.certainty==="moderate"?t("moderate"):x.certainty==="low"?t("low"):t("not_assessed");let d=document.getElementById("detail");d.innerHTML="";let title=document.createElement("h2");title.textContent=x.names[l];let pill=document.createElement("span");pill.className="pill caution";pill.textContent=t("review");d.append(title,pill);const actions=document.createElement("div");actions.className="detail-actions";const favBtn=document.createElement("button");favBtn.className="action primary";function refreshFavLabel(){favBtn.textContent=(favorites.has(x.id)?"★ "+t("removeFavorite"):"☆ "+t("addFavorite"))}refreshFavLabel();favBtn.onclick=()=>{if(favorites.has(x.id))favorites.delete(x.id);else favorites.add(x.id);saveFavorites();refreshFavLabel();renderResults()};actions.appendChild(favBtn);const printBtn=document.createElement("button");printBtn.className="action";printBtn.textContent="PDF / Imprimer";printBtn.onclick=()=>window.print();actions.appendChild(printBtn);d.appendChild(actions);
+function renderResults(){
+ const box=document.getElementById("results");
+ if(!box) return;
+ box.replaceChildren();
+ const rows=visible();
+ const l=document.getElementById("language")?.value||"fr";
+ const count=document.createElement("p");
+ count.className="count";
+ count.textContent=rows.length+" "+(t("countLabel")||"result(s)");
+ box.appendChild(count);
+ if(!rows.length){const empty=document.createElement("div");empty.className="empty";empty.textContent=t("empty")||"Aucun résultat.";box.appendChild(empty);return;}
+ rows.forEach(x=>{
+  const b=document.createElement("button");b.type="button";b.className="result"+(x.id===selectedId?" selected":"");
+  const title=document.createElement("strong");title.textContent=(x.names&& (x.names[l]||x.names.fr||x.names.en||x.names.pt))||x.id||"Ingrédient";
+  if(favorites.has(x.id)){const star=document.createElement("span");star.className="favmark";star.textContent="★";title.appendChild(star);}
+  const small=document.createElement("small");small.textContent=t(x.category)||x.category||"";
+  b.append(title,small);
+  b.addEventListener("click",()=>{selectedId=x.id;renderResults();renderDetail();});
+  box.appendChild(b);
+ });
+}
+function renderDetail(){let d=document.getElementById("detail");if(!d)return;let l=document.getElementById("language")?.value||"fr";let x=db.find(item=>item.id===selectedId);if(!x){d.innerHTML="";let empty=document.createElement("div");empty.className="empty";empty.textContent=t("empty")||"Aucun résultat.";d.appendChild(empty);return;}let certainty=x.certainty==="moderate"?t("moderate"):x.certainty==="low"?t("low"):t("not_assessed");d.innerHTML="";let title=document.createElement("h2");title.textContent=x.names[l];let pill=document.createElement("span");pill.className="pill caution";pill.textContent=t("review");d.append(title,pill);const actions=document.createElement("div");actions.className="detail-actions";const favBtn=document.createElement("button");favBtn.className="action primary";function refreshFavLabel(){favBtn.textContent=(favorites.has(x.id)?"★ "+t("removeFavorite"):"☆ "+t("addFavorite"))}refreshFavLabel();favBtn.onclick=()=>{if(favorites.has(x.id))favorites.delete(x.id);else favorites.add(x.id);saveFavorites();refreshFavLabel();renderResults()};actions.appendChild(favBtn);const printBtn=document.createElement("button");printBtn.className="action";printBtn.textContent="PDF / Imprimer";printBtn.onclick=()=>window.print();actions.appendChild(printBtn);d.appendChild(actions);
 function section(h,txt){let s=document.createElement("div");s.className="section";let hh=document.createElement("h3");hh.textContent=h;let p=document.createElement("p");p.textContent=txt;s.append(hh,p);d.appendChild(s)}
 let c=document.createElement("div");c.className="section";let ch=document.createElement("h3");ch.textContent=t("claim");let cp=document.createElement("p");cp.textContent=x.claim[l];let badge=document.createElement("div");badge.className="pill";badge.textContent=certainty;c.append(ch,cp,badge);d.appendChild(c);
 section(t("timing"),x.timing[l]);section(t("limits"),x.limits[l]);section(t("safety"),x.safety[l]);
 let s=document.createElement("div");s.className="section sources";let h=document.createElement("h3");h.textContent=t("sources");s.appendChild(h);x.sources.forEach(src=>{let a=document.createElement("a");a.href=src.url;a.target="_blank";a.rel="noopener noreferrer";a.textContent=src.label;a.setAttribute("aria-label",src.label+" (opens in new tab)");s.appendChild(a)});d.appendChild(s);
 }
-document.getElementById("language").addEventListener("change",setLanguage);
-document.getElementById("search").addEventListener("input",()=>{
-  renderResults();
-  const rows=visible();
-  if(rows.length){selectedId=rows[0].id;renderDetail();}
-  else {selectedId="";document.getElementById("detail").innerHTML='<div class="empty">'+t("empty")+'</div>';}
-});
+document.getElementById("language").addEventListener("change",()=>{setLanguage();});
+function updateSearchSelection(){const rows=visible();selectedId=rows.length?rows[0].id:"";renderResults();renderDetail();}
+document.getElementById("search").addEventListener("input",updateSearchSelection);
 document.getElementById("searchBtn").addEventListener("click",()=>{
-  activeCategory="all";activeGoal="all";favoritesOnly=false;
-  renderGoals();renderFilters();renderTools();renderResults();const rows=visible();
-  if(rows.length){selectedId=rows[0].id;renderDetail();}
-  else {selectedId="";document.getElementById("detail").innerHTML='<div class="empty">'+t("empty")+'</div>';}
-});
-document.getElementById("search").addEventListener("change",()=>{
-  renderResults();const rows=visible();
-  if(rows.length){selectedId=rows[0].id;renderDetail();}
-  else {selectedId="";document.getElementById("detail").innerHTML='<div class="empty">'+t("empty")+'</div>';}
+ activeCategory="all";activeGoal="all";favoritesOnly=false;
+ renderGoals();renderFilters();renderTools();updateSearchSelection();
 });
 document.getElementById("search").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();document.getElementById("searchBtn").click();}});
 setLanguage();
