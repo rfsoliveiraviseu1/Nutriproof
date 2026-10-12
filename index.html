@@ -139,16 +139,26 @@ function visible(){
  const goalFromQuery=Object.keys(queryGoalMap).find(g=>queryGoalMap[g].some(term=>normalizeText(term)===q));
  const effectiveGoal=activeGoal!=="all"?activeGoal:(goalFromQuery||"all");
  const compact=v=>normalizeText(v).replace(/[^a-z0-9]/g,"");
- return db.filter(x=>{
+ const eligible=db.filter(x=>{
   const fieldList=[x.names?.fr,x.names?.en,x.names?.pt,...(x.aliases||[]),x.id].filter(Boolean);
   const fields=fieldList.map(normalizeText);
   const categoryOk=activeCategory==="all"||x.category===activeCategory;
   const id=normalizeText(x.id||"");
   const goalOk=effectiveGoal==="all"||(goalIds[effectiveGoal]||[]).some(v=>id.includes(normalizeText(v))||normalizeText(v).includes(id));
-  const queryOk=!q||fields.some(f=>f.includes(q))||fields.some(f=>compact(f).includes(compact(q)))||q.split(" ").filter(Boolean).every(token=>fields.some(f=>f.includes(token)));
   const favoriteOk=!favoritesOnly||favorites.has(x.id);
-  return categoryOk&&goalOk&&queryOk&&favoriteOk;
- });
+  return categoryOk&&goalOk&&favoriteOk ? {x,fields,fieldList} : null;
+ }).filter(Boolean);
+ // If the query exactly matches an ingredient name, alias or ID (ignoring accents,
+ // spaces and hyphens), show only exact matches before trying broader text search.
+ if(q){
+  const cq=compact(q);
+  const exact=eligible.filter(({x,fields,fieldList})=>fieldList.some(v=>compact(v)===cq));
+  if(exact.length) return exact.map(o=>o.x);
+ }
+ return eligible.filter(({fields})=>{
+  const queryOk=!q||fields.some(f=>f.includes(q))||fields.some(f=>compact(f).includes(compact(q)))||q.split(" ").filter(Boolean).every(token=>fields.some(f=>f.includes(token)));
+  return queryOk;
+ }).map(o=>o.x);
 }
 function renderTools(){const box=document.getElementById("tools");box.innerHTML="";const fav=document.createElement("button");fav.className="action";fav.textContent=(favoritesOnly?"★ ":"☆ ")+t("favorites");fav.setAttribute("aria-pressed",String(favoritesOnly));fav.onclick=()=>{favoritesOnly=!favoritesOnly;renderTools();renderResults()};box.appendChild(fav);const exp=document.createElement("button");exp.className="action";exp.textContent=t("exportList");exp.onclick=()=>{const data=db.filter(x=>favorites.has(x.id)).map(x=>({id:x.id,name:x.names[document.getElementById("language").value]}));const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="nutriproof-favoris.json";a.click();URL.revokeObjectURL(url)};box.appendChild(exp)}
 function renderResults(){let box=document.getElementById("results");box.innerHTML="";let rows=visible();const count=document.createElement("p");count.className="count";count.textContent=rows.length+" "+t("countLabel");box.appendChild(count);if(!rows.length){box.innerHTML='<div class="empty">'+t("empty")+'</div>';return}rows.forEach(x=>{let b=document.createElement("button");b.className="result"+(x.id===selectedId?" selected":"");let title=document.createElement("strong");title.textContent=x.names[document.getElementById("language").value];if(favorites.has(x.id)){let star=document.createElement("span");star.className="favmark";star.textContent="★";title.appendChild(star)}let small=document.createElement("small");small.textContent=catName(x.category);b.append(title,small);b.onclick=()=>{selectedId=x.id;renderResults();renderDetail()};box.appendChild(b)})}
